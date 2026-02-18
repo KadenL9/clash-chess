@@ -1,1 +1,1 @@
-# clash-chess
+# Chess x Clash Royale
