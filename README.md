@@ -1,6 +1,7 @@
 # Chess x Clash Royale
 
 ## Mechanics
+* Both players start with only kings
 * Each turn, players will receive 2 elixir
 * The player can make a move by doing 1 of 2 things:
   * Make a regular chess move
