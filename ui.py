@@ -7,6 +7,9 @@ WINDOW_WIDTH = 1280
 WINDOW_HEIGHT = 720
 WINDOW_TITLE = "Clash x Chess"
 
+BOARD_X = WINDOW_WIDTH / 2 - (64 * 4) + 32
+BOARD_Y = WINDOW_HEIGHT / 2 - (64 * 4) + 32
+
 # image files
 images = {
     "b_bishop": "images/black_bishop.png",
@@ -29,13 +32,15 @@ black_bishop_texture = arcade.load_texture("images/black_bishop.png")
 class GameUI(arcade.Window):
     def __init__(self):
         super().__init__(WINDOW_WIDTH, WINDOW_HEIGHT, WINDOW_TITLE)
-        self.background_color = arcade.csscolor.ALICE_BLUE
+        self.background_color = arcade.csscolor.THISTLE
 
         # initialize GameState
         self.gamestate = GameState()
     
+
     def setup(self):
         pass
+
 
     def on_draw(self):
         self.clear()
@@ -44,6 +49,8 @@ class GameUI(arcade.Window):
         sprite_list.extend(self.get_board_sprites())
         sprite_list.extend(self.get_piece_sprites())
         sprite_list.draw()
+
+        arcade.draw_line(BOARD_X - 32, BOARD_Y - 32, BOARD_X + (64 * 8) - 32, BOARD_Y + (64 * 8) - 32, arcade.color.BLACK, 3)
     
 
     def get_board_sprites(self):
@@ -51,9 +58,9 @@ class GameUI(arcade.Window):
         board_list = SpriteList()
 
         alternate = 0
-        x_coord = 100
+        x_coord = BOARD_X
         for x in range(8):
-            y_coord = 100
+            y_coord = BOARD_Y
             for y in range(8):
                 tile_color = "db_tile"
                 if alternate:
@@ -74,9 +81,9 @@ class GameUI(arcade.Window):
         '''Return SpriteList of pieces on the board'''
         piece_list = SpriteList()
 
-        x_coord = 100
+        x_coord = BOARD_X
         for x in range(8):
-            y_coord = 100
+            y_coord = BOARD_Y
             for y in range(8):
                 if not self.gamestate.has_piece(7 - x, y):
                     continue
@@ -91,3 +98,24 @@ class GameUI(arcade.Window):
                 piece_list.append(piece)
         
         return piece_list
+    
+
+    def on_mouse_press(self, x, y, button, modifiers):
+        '''Called when mouse button is pressed'''
+        if button != arcade.MOUSE_BUTTON_LEFT:
+            return
+        
+        # check if player is clicking on a piece on the board
+        if (BOARD_X < x + 32 < BOARD_X + (64 * 8)) and (BOARD_Y < y + 32 < BOARD_Y + (64 * 8)):
+            # obtain the index in the 2-d table
+            norm_x = x + 32 - BOARD_X
+            norm_y = y + 32 - BOARD_Y
+
+            board_x = int(7 - norm_x // 64)
+            board_y = int(norm_y // 64)
+
+            print(board_x, board_y)
+            self.gamestate.add_piece("pawn", board_x, board_y)
+
+        return
+        

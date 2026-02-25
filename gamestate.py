@@ -1,4 +1,5 @@
 from piece import Piece
+from player import Player
 
 class GameState:
     def __init__(self):
@@ -10,6 +11,8 @@ class GameState:
         self.board = None
         self.currplayer = 0
         self.is_check = False
+        self.whiteplayer = Player(0)
+        self.blackplayer = Player(1)
 
         self.initialize_board()
 
@@ -25,8 +28,8 @@ class GameState:
         '''Initialize the starting board with only the king pieces'''
         self.board = [[None for x in range(8)] for y in range(8)]
         
-        white_king = Piece(0, 0, 0, "king")
-        black_king = Piece(1, 7, 7, "king")
+        white_king = Piece(0, 0, 7, "king")
+        black_king = Piece(1, 7, 0, "king")
 
         self.board[0][0] = white_king
         self.board[7][7] = black_king
@@ -46,8 +49,15 @@ class GameState:
 
     
     def add_piece(self, piecetype, x, y):
+        '''Add the piece to the board in the given (x, y) space'''
         self.board[x][y] = Piece(self.currplayer, x, y, piecetype)
-        
+
+    
+    def move_piece(self, x, y, new_x, new_y):
+        '''Move the piece to the new space'''
+        self.board[new_x][new_y] = self.board[x][y]
+        self.board[x][y] = None
+
 
     def get_possible_move(self, x, y):
         '''Get possible moves for the piece at (x, y)'''
@@ -79,16 +89,16 @@ class GameState:
         '''Checks front for open square, diagonal squares for pieces, and en passant'''
         available_moves = []
         # empty space, able to move to
-        if not self.has_piece(x - 1, y):
-            available_moves.append((x - 1, y))
+        if not self.has_piece(x, y + 1):
+            available_moves.append((x, y + 1))
         
         # left diagonal, opponent piece needs to exist
-        if y != 0 and self.has_piece(x - 1, y - 1) and self.board[x - 1][y - 1].get_player() != self.currplayer:
-            available_moves.append((x - 1, y - 1))
+        if x != 0 and self.has_piece(x - 1, y + 1) and self.board[x - 1][y + 1].get_player() != self.currplayer:
+            available_moves.append((x - 1, y + 1))
 
         # right diagonal, opponent piece needs to exist
-        if y != 7 and self.has_piece(x - 1, y + 1) and self.board[x - 1][y + 1].get_player() != self.currplayer:
-            available_moves.append((x - 1, y + 1))
+        if x != 7 and self.has_piece(x + 1, y + 1) and self.board[x + 1][y + 1].get_player() != self.currplayer:
+            available_moves.append((x + 1, y + 1))
 
         return available_moves
 
