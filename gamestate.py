@@ -153,8 +153,6 @@ class GameState:
             xbr += 1
             ybr += 1
 
-
-
         return available_moves
 
 
@@ -253,7 +251,8 @@ class GameState:
     
     def queen_possible_moves(self, x, y):
         '''Check diagonals, horizontals, and verticals'''
-        available_moves = []
+        available_moves = self.bishop_possible_moves(x, y) + self.rook_possible_moves(x, y)
+
 
         return available_moves
 
