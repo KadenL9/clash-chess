@@ -92,6 +92,69 @@ class GameState:
         '''Check diagonals'''
         available_moves = []
 
+        # top left direction
+        xtl = x
+        ytl = y
+        while xtl > 0 and ytl > 0:
+            if self.has_piece(xtl - 1, ytl - 1):
+                if self.board[xtl - 1][ytl - 1].get_player() != self.currplayer:
+                    available_moves.append((xtl - 1, ytl - 1))
+                    
+                break
+            else:
+                available_moves.append(xtl - 1, ytl - 1)
+
+            xtl -= 1
+            ytl -= 1
+
+        
+        # top right direction
+        xtr = x
+        ytr = y
+        while xtr > 0 and ytr < 7:
+            if self.has_piece(xtr - 1, ytr + 1):
+                if self.board[xtr - 1][ytr + 1].get_player() != self.currplayer:
+                    available_moves.append((xtr - 1, ytr + 1))
+
+                break
+            else:
+                available_moves.append((xtr - 1, ytr + 1))
+            
+            xtr -= 1
+            ytr += 1
+    
+        # bottom left direction
+        xbl = x
+        ybl = y
+        while xbl < 7 and ybl > 0:
+            if self.has_piece(xbl + 1, ybl - 1):
+                if self.board[xbl + 1][ybl - 1].get_player() != self.currplayer:
+                    available_moves.append((xbl + 1, ybl - 1))
+                
+                break
+            else:
+                available_moves.append((xbl + 1, ybl - 1))
+            
+            xbl += 1
+            ybl -= 1
+
+        # bottom right direction
+        xbr = x
+        ybr = y
+        while xbr < 7 and ybr < 7:
+            if self.has_piece(xbr + 1, ybr + 1):
+                if self.board[xbr + 1][ybr + 1].get_player() != self.currplayer:
+                    available_moves.append((xbr + 1, ybr + 1))
+                
+                break
+            else:
+                available_moves.append((xbr + 1, ybr + 1))
+            
+            xbr += 1
+            ybr += 1
+
+
+
         return available_moves
 
 
