@@ -83,8 +83,8 @@ class GameUI(arcade.Window):
                 piecetype = self.gamestate.get_board[7 - x][y].get_piecetype()
 
                 piece = Sprite(images[color + "_" + piecetype], 0.5)
-                tile.center_x = x_coord + (x * 64)
-                tile.center_y = y_coord + (y * 64)
+                piece.center_x = x_coord + (x * 64)
+                piece.center_y = y_coord + (y * 64)
 
                 piece_list.append(piece)
         
