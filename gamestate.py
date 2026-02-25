@@ -110,63 +110,63 @@ class GameState:
         # top left direction
         xtl = x
         ytl = y
-        while xtl > 0 and ytl > 0:
-            if self.has_piece(xtl - 1, ytl - 1):
-                if self.board[xtl - 1][ytl - 1].get_player() != self.currplayer:
-                    available_moves.append((xtl - 1, ytl - 1))
+        while xtl > 0 and ytl < 7:
+            if self.has_piece(xtl - 1, ytl + 1):
+                if self.board[xtl - 1][ytl + 1].get_player() != self.currplayer:
+                    available_moves.append((xtl - 1, ytl + 1))
                     
                 break
             else:
-                available_moves.append(xtl - 1, ytl - 1)
+                available_moves.append(xtl - 1, ytl + 1)
 
             xtl -= 1
-            ytl -= 1
+            ytl += 1
 
         
         # top right direction
         xtr = x
         ytr = y
-        while xtr > 0 and ytr < 7:
-            if self.has_piece(xtr - 1, ytr + 1):
-                if self.board[xtr - 1][ytr + 1].get_player() != self.currplayer:
-                    available_moves.append((xtr - 1, ytr + 1))
+        while xtr < 7 and ytr < 7:
+            if self.has_piece(xtr + 1, ytr + 1):
+                if self.board[xtr + 1][ytr + 1].get_player() != self.currplayer:
+                    available_moves.append((xtr + 1, ytr + 1))
 
                 break
             else:
-                available_moves.append((xtr - 1, ytr + 1))
+                available_moves.append((xtr + 1, ytr + 1))
             
-            xtr -= 1
+            xtr += 1
             ytr += 1
     
         # bottom left direction
         xbl = x
         ybl = y
-        while xbl < 7 and ybl > 0:
-            if self.has_piece(xbl + 1, ybl - 1):
-                if self.board[xbl + 1][ybl - 1].get_player() != self.currplayer:
-                    available_moves.append((xbl + 1, ybl - 1))
+        while xbl > 0 and ybl > 0:
+            if self.has_piece(xbl - 1, ybl - 1):
+                if self.board[xbl - 1][ybl - 1].get_player() != self.currplayer:
+                    available_moves.append((xbl - 1, ybl - 1))
                 
                 break
             else:
-                available_moves.append((xbl + 1, ybl - 1))
+                available_moves.append((xbl - 1, ybl - 1))
             
-            xbl += 1
+            xbl -= 1
             ybl -= 1
 
         # bottom right direction
         xbr = x
         ybr = y
-        while xbr < 7 and ybr < 7:
-            if self.has_piece(xbr + 1, ybr + 1):
-                if self.board[xbr + 1][ybr + 1].get_player() != self.currplayer:
-                    available_moves.append((xbr + 1, ybr + 1))
+        while xbr < 7 and ybr > 0:
+            if self.has_piece(xbr + 1, ybr - 1):
+                if self.board[xbr + 1][ybr - 1].get_player() != self.currplayer:
+                    available_moves.append((xbr + 1, ybr - 1))
                 
                 break
             else:
-                available_moves.append((xbr + 1, ybr + 1))
+                available_moves.append((xbr + 1, ybr - 1))
             
             xbr += 1
-            ybr += 1
+            ybr -= 1
 
         return available_moves
 
@@ -175,28 +175,28 @@ class GameState:
         '''Check all Ls'''
         available_moves = []
 
-        # top Ls
+        # left Ls
         if x >= 2:
             if y > 0 and (not self.has_piece(x - 2, y - 1) or self.board[x - 2][y - 1].get_player() != self.currplayer):
                 available_moves.append(x - 2, y - 1)
             if y < 7 and (not self.has_piece(x - 2, y + 1) or self.board[x - 2][y + 1].get_player() != self.currplayer):
                 available_moves.append(x - 2, y + 1)
         
-        # bottom Ls
+        # right Ls
         if x <= 5:
             if y > 0 and (not self.has_piece(x + 2, y - 1) or self.board[x + 2][y - 1].get_player() != self.currplayer):
                 available_moves.append(x + 2, y - 1)
             if y < 7 and (not self.has_piece(x + 2, y + 1) or self.board[x + 2][y + 1].get_player() != self.currplayer):
                 available_moves.append(x + 2, y + 1)
 
-        # left Ls
+        # bottom Ls
         if y >= 2:
             if x > 0 and (not self.has_piece(x - 1, y - 2) or self.board[x - 1][y - 2].get_player() != self.currplayer):
                 available_moves.append(x - 1, y - 2)
             if x < 7 and (not self.has_piece(x + 1, y - 2) or self.board[x + 1][y - 2].get_player() != self.currplayer):
                 available_moves.append(x + 1, y - 2)
         
-        # right Ls
+        # top Ls
         if y <= 5:
             if x > 0 and (not self.has_piece(x - 1, y + 2) or self.board[x - 1][y + 2].get_player() != self.currplayer):
                 available_moves.append(x - 1, y + 2)
@@ -209,57 +209,57 @@ class GameState:
         '''Check horizontals and verticals'''
         available_moves = []
 
-        xu = x
-        # up direction
-        while xu > 0:
-            if self.has_piece(xu - 1, y):
-                if self.board[xu - 1][y].get_player() != self.currplayer:
-                    available_moves.append((xu - 1, y))
-
-                break
-            else:
-                available_moves.append((xu - 1, y))
-
-            xu -= 1
-        
-        # down direction
-        xd = x
-        while xd < 7:
-            if self.has_piece(xd + 1, y):
-                if self.board[xd + 1][y].get_player() != self.currplayer:
-                    available_moves.append((xd + 1, y))
-                
-                break
-            else:
-                available_moves.append((xd + 1, y))
-            
-            xd += 1
-
+        xl = x
         # left direction
-        yl = y
-        while yl > 0:
-            if self.has_piece(x, yl - 1):
-                if self.board[x][yl - 1].get_player() != self.currplayer:
-                    available_moves.append((x, yl - 1))
-                
+        while xl > 0:
+            if self.has_piece(xl - 1, y):
+                if self.board[xl - 1][y].get_player() != self.currplayer:
+                    available_moves.append((xl - 1, y))
+
                 break
             else:
-                available_moves.append((x, yl - 1))
+                available_moves.append((xl - 1, y))
 
-            yl -= 1
-
+            xl -= 1
+        
         # right direction
-        yr = y
-        while yr < 7:
-            if self.has_piece(x, yr + 1):
-                if self.board[x][yr + 1].get_player() != self.currplayer:
-                    available_moves.append((x, yr + 1))
+        xr = x
+        while xr < 7:
+            if self.has_piece(xr + 1, y):
+                if self.board[xr + 1][y].get_player() != self.currplayer:
+                    available_moves.append((xr + 1, y))
                 
                 break
             else:
-                available_moves.append((x, yr - 1))
+                available_moves.append((xr + 1, y))
             
-            yr += 1
+            xr += 1
+
+        # down direction
+        yd = y
+        while yd > 0:
+            if self.has_piece(x, yd - 1):
+                if self.board[x][yd - 1].get_player() != self.currplayer:
+                    available_moves.append((x, yd - 1))
+                
+                break
+            else:
+                available_moves.append((x, yd - 1))
+
+            yd -= 1
+
+        # up direction
+        yu = y
+        while yu < 7:
+            if self.has_piece(x, yu + 1):
+                if self.board[x][yu + 1].get_player() != self.currplayer:
+                    available_moves.append((x, yu + 1))
+                
+                break
+            else:
+                available_moves.append((x, yu - 1))
+            
+            yu += 1
 
 
         return available_moves

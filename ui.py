@@ -45,12 +45,15 @@ class GameUI(arcade.Window):
     def on_draw(self):
         self.clear()
 
+        # draw sprites
         sprite_list = SpriteList()
         sprite_list.extend(self.get_board_sprites())
         sprite_list.extend(self.get_piece_sprites())
+        sprite_list.extend(self.get_shop_sprites())
         sprite_list.draw()
 
-        arcade.draw_line(BOARD_X - 32, BOARD_Y - 32, BOARD_X + (64 * 8) - 32, BOARD_Y + (64 * 8) - 32, arcade.color.BLACK, 3)
+        # shop stuff
+
     
 
     def get_board_sprites(self):
@@ -85,11 +88,11 @@ class GameUI(arcade.Window):
         for x in range(8):
             y_coord = BOARD_Y
             for y in range(8):
-                if not self.gamestate.has_piece(7 - x, y):
+                if not self.gamestate.has_piece(x, y):
                     continue
 
-                color = 'b' if self.gamestate.get_board()[7 - x][y].get_player() else 'w'
-                piecetype = self.gamestate.get_board()[7 - x][y].get_piecetype()
+                color = 'b' if self.gamestate.get_board()[x][y].get_player() else 'w'
+                piecetype = self.gamestate.get_board()[x][y].get_piecetype()
 
                 piece = Sprite(images[color + "_" + piecetype], 0.4)
                 piece.center_x = x_coord + (x * 64)
@@ -98,6 +101,46 @@ class GameUI(arcade.Window):
                 piece_list.append(piece)
         
         return piece_list
+    
+    
+    def get_shop_sprites(self):
+        '''Return SpriteList of sprites in the shop'''
+        shop_list = SpriteList()
+
+        # set color based on the player
+        color = 'b' if self.gamestate.get_currplayer() else 'w'
+
+        # pawn
+        shop_pawn = Sprite(images[color + "_pawn"], 0.4)
+        shop_pawn.center_x = WINDOW_WIDTH // 2 + 64 * 6
+        shop_pawn.center_y = WINDOW_HEIGHT // 2 + 128
+        shop_list.append(shop_pawn)
+
+        # bishop
+        shop_bishop = Sprite(images[color + "_bishop"], 0.4)
+        shop_bishop.center_x = WINDOW_WIDTH // 2 + 64 * 8
+        shop_bishop.center_y = WINDOW_HEIGHT // 2 + 128
+        shop_list.append(shop_bishop)
+
+        # knight
+        shop_knight = Sprite(images[color + "_knight"], 0.4)
+        shop_knight.center_x = WINDOW_WIDTH // 2 + 64 * 6
+        shop_knight.center_y = WINDOW_HEIGHT // 2
+        shop_list.append(shop_knight)
+
+        # rook
+        shop_rook = Sprite(images[color + "_rook"], 0.4)
+        shop_rook.center_x = WINDOW_WIDTH // 2 + 64 * 8
+        shop_rook.center_y = WINDOW_HEIGHT // 2
+        shop_list.append(shop_rook)
+
+        # queen
+        shop_queen = Sprite(images[color + "_queen"], 0.4)
+        shop_queen.center_x = WINDOW_WIDTH // 2 + 64 * 7
+        shop_queen.center_y = WINDOW_HEIGHT // 2 - 128
+        shop_list.append(shop_queen)
+
+        return shop_list
     
 
     def on_mouse_press(self, x, y, button, modifiers):
@@ -111,11 +154,9 @@ class GameUI(arcade.Window):
             norm_x = x + 32 - BOARD_X
             norm_y = y + 32 - BOARD_Y
 
-            board_x = int(7 - norm_x // 64)
+            board_x = int(norm_x // 64)
             board_y = int(norm_y // 64)
 
             print(board_x, board_y)
             self.gamestate.add_piece("pawn", board_x, board_y)
-
-        return
         
