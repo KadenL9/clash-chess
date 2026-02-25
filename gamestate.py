@@ -44,6 +44,11 @@ class GameState:
         
         self.board = new_board
 
+    
+    def add_piece(self, piecetype, x, y):
+        self.board[x][y] = Piece(self.currplayer, x, y, piecetype)
+        
+
     def get_possible_move(self, x, y):
         '''Get possible moves for the piece at (x, y)'''
         piece = self.board[x][y]
@@ -67,7 +72,7 @@ class GameState:
 
     def has_piece(self, x, y):
         '''Returns bool which determines if a piece occupies the square or not'''
-        return self.board[x][y] == Piece
+        return type(self.board[x][y]) == Piece
     
 
     def pawn_possible_moves(self, x, y):

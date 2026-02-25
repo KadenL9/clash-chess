@@ -40,7 +40,9 @@ class GameUI(arcade.Window):
     def on_draw(self):
         self.clear()
 
-        sprite_list = self.get_board_sprites()
+        sprite_list = SpriteList()
+        sprite_list.extend(self.get_board_sprites())
+        sprite_list.extend(self.get_piece_sprites())
         sprite_list.draw()
     
 
@@ -79,10 +81,10 @@ class GameUI(arcade.Window):
                 if not self.gamestate.has_piece(7 - x, y):
                     continue
 
-                color = 'b' if self.gamestate.get_board[7 - x][y].get_player() else 'w'
-                piecetype = self.gamestate.get_board[7 - x][y].get_piecetype()
+                color = 'b' if self.gamestate.get_board()[7 - x][y].get_player() else 'w'
+                piecetype = self.gamestate.get_board()[7 - x][y].get_piecetype()
 
-                piece = Sprite(images[color + "_" + piecetype], 0.5)
+                piece = Sprite(images[color + "_" + piecetype], 0.4)
                 piece.center_x = x_coord + (x * 64)
                 piece.center_y = y_coord + (y * 64)
 
