@@ -253,7 +253,6 @@ class GameState:
         '''Check diagonals, horizontals, and verticals'''
         available_moves = self.bishop_possible_moves(x, y) + self.rook_possible_moves(x, y)
 
-
         return available_moves
 
 
