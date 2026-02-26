@@ -25,7 +25,8 @@ images = {
     "w_queen": "images/white_queen.png",
     "w_rook": "images/white_rook.png",
     "db_tile": "images/dark_brown_tile.png",
-    "lb_tile": "images/light_brown_tile.png"
+    "lb_tile": "images/light_brown_tile.png",
+    "shop_title": "images/shop_title.png"
 }
 black_bishop_texture = arcade.load_texture("images/black_bishop.png")
 
@@ -44,16 +45,31 @@ class GameUI(arcade.Window):
 
     def on_draw(self):
         self.clear()
-
-        # draw sprites
+     
         sprite_list = SpriteList()
+
+        # draw title 
+        # placeholder title for now, will use custom png or something later on
+        title = arcade.Text("CLASH X CHESS (placeholder)", WINDOW_WIDTH // 2 - 200, WINDOW_HEIGHT - 80, arcade.color.BLACK, 40)
+        title.draw()
+
+        # add in other sprites from helper functions
         sprite_list.extend(self.get_board_sprites())
         sprite_list.extend(self.get_piece_sprites())
         sprite_list.extend(self.get_shop_sprites())
+
+        # shop_title
+        """shop_title = arcade.Sprite(images["shop_title"], 0.125)
+        shop_title.center_x = WINDOW_WIDTH // 2
+        shop_title.center_y = WINDOW_HEIGHT // 2 + 256
+        sprite_list.append(shop_title)"""
+
+        # draw all sprites
         sprite_list.draw()
 
         # shop stuff
-
+        shop_title = arcade.Text("PIECES SHOP (placeholder)", WINDOW_WIDTH // 2 + 350, WINDOW_HEIGHT // 2 + 192, arcade.color.BLACK, 30)
+        shop_title.draw()
     
 
     def get_board_sprites(self):
