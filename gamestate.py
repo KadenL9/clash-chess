@@ -282,4 +282,19 @@ class GameState:
         '''Check all directions in 1 square radius, including possible checks'''
         available_moves = []
 
+        coords = [(x + 1, y + 1), (x + 1, y), (x + 1, y - 1), (x, y + 1), (x, y - 1), (x - 1, y + 1), (x - 1, y), (x - 1, y - 1)]
+        for kx, ky in coords:
+            if (0 <= kx <= 7) and (0 <= ky <= 7):
+                if self.valid_king_square(kx, ky):
+                    available_moves.append((kx, ky))
+
         return available_moves
+
+
+    def valid_king_square(self, x, y):
+        '''Check square for valid king move'''
+        # check diagonals for bishops or queens
+
+        # check horizontals and verticals for queens
+
+        pass
