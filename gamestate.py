@@ -20,6 +20,10 @@ class GameState:
     def get_board(self):
         return self.board
     
+
+    def get_piece(self, x, y):
+        return self.board[x][y]
+    
     def get_currplayer(self):
         return self.currplayer
     
@@ -28,8 +32,8 @@ class GameState:
         '''Initialize the starting board with only the king pieces'''
         self.board = [[None for x in range(8)] for y in range(8)]
         
-        white_king = Piece(0, 0, 7, "king")
-        black_king = Piece(1, 7, 0, "king")
+        white_king = Piece(0, 0, 0, "king")
+        black_king = Piece(1, 7, 7, "king")
 
         self.board[0][0] = white_king
         self.board[7][7] = black_king
@@ -59,26 +63,29 @@ class GameState:
         self.board[x][y] = None
 
 
-    def get_possible_move(self, x, y):
+    def get_possible_moves(self, x, y):
         '''Get possible moves for the piece at (x, y)'''
         piece = self.board[x][y]
+        print(type(piece))
             
         # if for some reason we don't have a piece or its None
         if type(piece) != Piece:
             return []
-        elif type(piece) == "pawn":
+        elif piece.get_piecetype() == "pawn":
             return self.pawn_possible_moves(x, y)
-        elif type(piece) == "bishop":
+        elif piece.get_piecetype() == "bishop":
             return self.bishop_possible_moves(x, y)
-        elif type(piece) == "knight":
+        elif piece.get_piecetype() == "knight":
             return self.knight_possible_moves(x, y)
-        elif type(piece) == "rook":
+        elif piece.get_piecetype() == "rook":
             return self.rook_possible_moves(x, y)
-        elif type(piece) == "queen":
+        elif piece.get_piecetype() == "queen":
             return self.queen_possible_moves(x, y)
-        elif type(piece) == "king":
+        elif piece.get_piecetype() == "king":
             return self.king_possible_moves(x, y)
-
+        else:
+            return []
+        
 
     def has_piece(self, x, y):
         '''Returns bool which determines if a piece occupies the square or not'''
@@ -117,7 +124,7 @@ class GameState:
                     
                 break
             else:
-                available_moves.append(xtl - 1, ytl + 1)
+                available_moves.append((xtl - 1, ytl + 1))
 
             xtl -= 1
             ytl += 1
@@ -257,7 +264,7 @@ class GameState:
                 
                 break
             else:
-                available_moves.append((x, yu - 1))
+                available_moves.append((x, yu + 1))
             
             yu += 1
 

@@ -26,7 +26,8 @@ images = {
     "w_rook": "images/white_rook.png",
     "db_tile": "images/dark_brown_tile.png",
     "lb_tile": "images/light_brown_tile.png",
-    "shop_title": "images/shop_title.png"
+    "shop_title": "images/shop_title.png",
+    "dot": "images/dot.png" 
 }
 black_bishop_texture = arcade.load_texture("images/black_bishop.png")
 
@@ -37,6 +38,9 @@ class GameUI(arcade.Window):
 
         # initialize GameState
         self.gamestate = GameState()
+
+        # SpriteList for available moves
+        self.available_move_sprites = SpriteList()
     
 
     def setup(self):
@@ -57,6 +61,9 @@ class GameUI(arcade.Window):
         sprite_list.extend(self.get_board_sprites())
         sprite_list.extend(self.get_piece_sprites())
         sprite_list.extend(self.get_shop_sprites())
+
+        # available moves
+        sprite_list.extend(self.available_move_sprites)
 
         # shop_title
         """shop_title = arcade.Sprite(images["shop_title"], 0.125)
@@ -164,15 +171,32 @@ class GameUI(arcade.Window):
         if button != arcade.MOUSE_BUTTON_LEFT:
             return
         
-        # check if player is clicking on a piece on the board
+        self.available_move_sprites.clear()
+
+        # check if player is clicking on a piece on the board and show available moves
         if (BOARD_X < x + 32 < BOARD_X + (64 * 8)) and (BOARD_Y < y + 32 < BOARD_Y + (64 * 8)):
             # obtain the index in the 2-d table
             norm_x = x + 32 - BOARD_X
             norm_y = y + 32 - BOARD_Y
 
+            # actual coords
             board_x = int(norm_x // 64)
             board_y = int(norm_y // 64)
 
-            print(board_x, board_y)
-            self.gamestate.add_piece("pawn", board_x, board_y)
+            if self.gamestate.has_piece(board_x, board_y) and self.gamestate.get_currplayer() == self.gamestate.get_piece(board_x, board_y).get_player():
+                possible_moves = self.gamestate.get_possible_moves(board_x, board_y)
+
+                if not possible_moves:
+                    print("no possible moves")
+                    return
+
+                for ax, ay in possible_moves:
+                    dot = Sprite(images["dot"])
+                    dot.center_x = BOARD_X + (64 * ax)
+                    dot.center_y = BOARD_Y + (64 * ay)
+
+                    self.available_move_sprites.append(dot)
+
+
+
         
