@@ -5,6 +5,7 @@
   --color-panel-bg: rgba(28, 33, 46, 0.85);
   --color-panel-border: rgba(56, 68, 90, 0.4);
   
+  --tile-size: 64px;
   --color-white-tile: #eeeed2;
   --color-green-tile: #769656;
   
@@ -89,7 +90,8 @@ body {
   border: 1px solid var(--color-panel-border);
   border-radius: 16px;
   padding: 40px;
-  width: 460px;
+  width: 100%;
+  max-width: 460px;
   text-align: center;
   backdrop-filter: blur(15px);
   box-shadow: 0 12px 40px rgba(0, 0, 0, 0.5);
@@ -424,17 +426,17 @@ body {
 
 .chess-board {
   display: grid;
-  grid-template-columns: repeat(8, 64px);
-  grid-template-rows: repeat(8, 64px);
-  width: 512px;
-  height: 512px;
+  grid-template-columns: repeat(8, var(--tile-size));
+  grid-template-rows: repeat(8, var(--tile-size));
+  width: calc(8 * var(--tile-size));
+  height: calc(8 * var(--tile-size));
   position: relative;
 }
 
 /* Chess Tiles */
 .tile {
-  width: 64px;
-  height: 64px;
+  width: var(--tile-size);
+  height: var(--tile-size);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -465,8 +467,8 @@ body {
 /* Move Indicators */
 .tile.indicator-move::after {
   content: '';
-  width: 20px;
-  height: 20px;
+  width: 35%;
+  height: 35%;
   border-radius: 50%;
   background: rgba(76, 217, 100, 0.7);
   position: absolute;
@@ -475,8 +477,8 @@ body {
 
 .tile.indicator-spawn::after {
   content: '';
-  width: 20px;
-  height: 20px;
+  width: 35%;
+  height: 35%;
   border-radius: 50%;
   background: rgba(180, 100, 220, 0.7);
   position: absolute;
@@ -486,7 +488,7 @@ body {
 /* Pieces styling */
 .piece {
   font-family: 'Segoe UI Symbol', 'Arial', sans-serif;
-  font-size: 2.8rem;
+  font-size: calc(var(--tile-size) * 0.75);
   line-height: 1;
   display: flex;
   align-items: center;
@@ -627,7 +629,8 @@ body {
   box-shadow: 0 0 30px rgba(56, 139, 253, 0.3);
   border-radius: 16px;
   padding: 40px;
-  width: 480px;
+  width: 90%;
+  max-width: 480px;
   text-align: center;
   backdrop-filter: blur(15px);
   display: flex;
@@ -648,8 +651,12 @@ body {
   color: var(--color-text-secondary);
 }
 
-/* Responsive Scaling for smaller screens */
+/* Responsive Sizing for medium screens */
 @media (max-width: 1200px) {
+  :root {
+    --tile-size: 55px; /* Board scales to 440px */
+  }
+
   .game-container {
     flex-direction: column;
     align-items: center;
@@ -657,7 +664,7 @@ body {
   }
   
   .hud-sidebar, .shop-sidebar {
-    width: 512px;
+    width: calc(8 * var(--tile-size)); /* Matches board width! */
     flex-direction: row;
   }
   
@@ -681,6 +688,131 @@ body {
   
   .shop-item-card {
     flex: 1;
-    min-width: 140px;
+    min-width: 120px;
+    padding: 8px 12px;
+  }
+
+  .shop-item-icon {
+    font-size: 1.8rem;
+    margin-right: 8px;
+    width: 28px;
+  }
+
+  .shop-item-name {
+    font-size: 0.9rem;
+  }
+}
+
+/* Responsive Sizing for mobile phones */
+@media (max-width: 600px) {
+  :root {
+    --tile-size: 42px; /* Board scales to 336px */
+  }
+
+  body {
+    padding: 10px;
+  }
+
+  #app {
+    padding: 10px;
+  }
+
+  .logo {
+    font-size: 2.2rem;
+  }
+
+  .tagline {
+    font-size: 0.85rem;
+  }
+
+  .lobby-card {
+    padding: 24px;
+    width: 100%;
+  }
+
+  .room-code-display {
+    font-size: 1.8rem;
+    padding: 10px;
+  }
+
+  .game-container {
+    gap: 15px;
+  }
+
+  .hud-sidebar, .shop-sidebar {
+    width: 100%;
+    max-width: calc(8 * var(--tile-size));
+    flex-direction: column; /* Stack HUD cards on narrow mobile */
+    gap: 10px;
+  }
+
+  .player-card {
+    padding: 12px;
+  }
+
+  .elixir-container {
+    gap: 10px;
+  }
+
+  .elixir-text {
+    font-size: 0.85rem;
+    width: 60px;
+  }
+
+  .shop-card {
+    padding: 15px;
+  }
+
+  .shop-title {
+    font-size: 1.1rem;
+    margin-bottom: 12px;
+  }
+
+  .shop-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr); /* 3 columns of cards */
+    gap: 8px;
+  }
+
+  .shop-item-card {
+    flex-direction: column; /* vertical layouts on mobile */
+    align-items: center;
+    padding: 8px 4px;
+    text-align: center;
+    min-width: 0;
+  }
+
+  .shop-item-icon {
+    font-size: 1.8rem;
+    margin-right: 0;
+    margin-bottom: 4px;
+    width: auto;
+  }
+
+  .shop-item-details {
+    align-items: center;
+  }
+
+  .shop-item-name {
+    font-size: 0.8rem;
+  }
+
+  .shop-item-cost {
+    font-size: 0.75rem;
+  }
+}
+
+/* Responsive Sizing for extremely small mobile screens */
+@media (max-width: 360px) {
+  :root {
+    --tile-size: 36px; /* Board scales to 288px */
+  }
+  
+  .logo {
+    font-size: 1.8rem;
+  }
+  
+  .shop-grid {
+    grid-template-columns: repeat(2, 1fr); /* 2 columns for extremely narrow screens */
   }
 }

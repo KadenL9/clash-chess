@@ -25,12 +25,22 @@ const parseSquareName = (square) => {
   return { x, y };
 };
 
-// Determine server URL dynamically (Render URL or localhost)
-const DEV_SERVER_URL = "http://localhost:3000";
-const PROD_SERVER_URL = import.meta.env.VITE_BACKEND_URL || "";
-const SERVER_URL = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1' 
-  ? DEV_SERVER_URL 
-  : PROD_SERVER_URL;
+// Determine server URL dynamically: if running on local dev server port 5173, point to backend port 3000 on the same host
+let SERVER_URL = window.location.port === '5173'
+  ? `http://${window.location.hostname}:3000`
+  : (import.meta.env.VITE_BACKEND_URL || "");
+
+// Automatically upgrade http:// to https:// in production when served over secure HTTPS
+if (window.location.protocol === 'https:' && SERVER_URL.startsWith('http://')) {
+  SERVER_URL = SERVER_URL.replace('http://', 'https://');
+}
+
+// Proactively send a health check request to wake up Render free tier container immediately on load
+if (SERVER_URL) {
+  fetch(`${SERVER_URL}/health`)
+    .then(() => console.log("Backend server health check succeeded (server is awake)."))
+    .catch((err) => console.log("Proactive server wakeup request dispatched."));
+}
 
 console.log(`Connecting to backend server at: ${SERVER_URL}`);
 const socket = io(SERVER_URL, { autoConnect: false });
@@ -78,6 +88,10 @@ const shopCards = document.querySelectorAll('.shop-item-card');
 
 // Connect and trigger action helper
 function connectSocket(callback) {
+  if (!SERVER_URL) {
+    lobbyStatus.innerHTML = "<span style='color: #f87171;'>⚠️ Production backend URL is not configured. Please add the <strong>VITE_BACKEND_URL</strong> environment variable in Vercel, or click 'Play Offline' below to play locally!</span>";
+    return;
+  }
   if (!socket.connected) {
     lobbyStatus.innerText = "Connecting to server (waking up Render instance)...";
     socket.connect();
@@ -198,6 +212,9 @@ socket.on('room_created', ({ roomId }) => {
 
 socket.on('room_joined', ({ roomId, yourColor }) => {
   console.log(`Match started inside Room ${roomId}, color assigned: ${yourColor}`);
+  if (!yourColor) {
+    alert("⚠️ Protocol Error: Server did not assign a player color! Please make sure your Render backend has the latest server/index.js code deployed and has finished building.");
+  }
   myColor = yourColor;
 
   lobbySetup.classList.add('hidden');
