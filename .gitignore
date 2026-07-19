@@ -1,1 +1,8 @@
-__pycache__/*
+node_modules/
+server/node_modules/
+dist/
+.vite/
+__pycache__/
+*.pyc
+.env
+.env.*
