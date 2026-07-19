@@ -56,6 +56,11 @@ let selectedShopPiece = null;       // 'pawn', 'knight', etc.
 let dragSource = null;              // {source: 'board'/'shop', x, y, piece}
 let availableMoves = [];            // Array of square names
 let placementSquares = [];          // Array of square names
+let playerNames = null;             // Active player names in room
+
+// Auth State
+let loggedInUser = localStorage.getItem('clash_chess_user') || null;
+let authMode = 'login';             // 'login' or 'register'
 
 // DOM Elements
 const lobbySetup = document.getElementById('lobby-setup');
@@ -84,6 +89,143 @@ const overlaySubtitle = document.getElementById('overlay-subtitle');
 const btnOverlayRestart = document.getElementById('btn-overlay-restart');
 const shopCards = document.querySelectorAll('.shop-item-card');
 
+// Auth DOM Elements
+const authFormView = document.getElementById('auth-form-view');
+const authProfileView = document.getElementById('auth-profile-view');
+const authTitle = document.getElementById('auth-title');
+const authUsernameInput = document.getElementById('auth-username');
+const authPasswordInput = document.getElementById('auth-password');
+const btnAuthAction = document.getElementById('btn-auth-action');
+const btnToggleAuth = document.getElementById('btn-toggle-auth');
+const profileUsernameDisplay = document.getElementById('profile-username');
+const statPlayed = document.getElementById('stat-played');
+const statWinrate = document.getElementById('stat-winrate');
+const statWins = document.getElementById('stat-wins');
+const statLosses = document.getElementById('stat-losses');
+const btnLogout = document.getElementById('btn-logout');
+
+// --- 0. AUTHENTICATION & STATISTICS ---
+
+async function fetchStats(username) {
+  if (!SERVER_URL) return;
+  try {
+    const res = await fetch(`${SERVER_URL}/api/stats/${username}`);
+    if (res.ok) {
+      const data = await res.json();
+      const stats = data.stats;
+      statPlayed.innerText = stats.gamesPlayed;
+      statWins.innerText = stats.wins;
+      statLosses.innerText = stats.losses;
+      
+      const wr = stats.gamesPlayed > 0 
+        ? Math.round((stats.wins / stats.gamesPlayed) * 100) 
+        : 0;
+      statWinrate.innerText = `${wr}%`;
+    }
+  } catch (err) {
+    console.error("Error fetching stats:", err);
+  }
+}
+
+function initAuth() {
+  if (loggedInUser) {
+    authFormView.classList.add('hidden');
+    authProfileView.classList.remove('hidden');
+    profileUsernameDisplay.innerText = loggedInUser.toUpperCase();
+    fetchStats(loggedInUser);
+  } else {
+    authFormView.classList.remove('hidden');
+    authProfileView.classList.add('hidden');
+  }
+}
+
+btnToggleAuth.addEventListener('click', () => {
+  if (authMode === 'login') {
+    authMode = 'register';
+    authTitle.innerText = "PLAYER SIGN UP";
+    btnAuthAction.innerText = "Sign Up";
+    btnToggleAuth.innerText = "Log In";
+    document.querySelector('.auth-toggle-text').innerHTML = `Already have an account? <span id="btn-toggle-auth" style="color: var(--color-gold); cursor: pointer; text-decoration: underline;">Log In</span>`;
+  } else {
+    authMode = 'login';
+    authTitle.innerText = "PLAYER LOGIN";
+    btnAuthAction.innerText = "Log In";
+    btnToggleAuth.innerText = "Sign Up";
+    document.querySelector('.auth-toggle-text').innerHTML = `Don't have an account? <span id="btn-toggle-auth" style="color: var(--color-gold); cursor: pointer; text-decoration: underline;">Sign Up</span>`;
+  }
+  // Re-attach toggle listener since we overwrote innerHTML
+  document.getElementById('btn-toggle-auth').addEventListener('click', () => btnToggleAuth.click());
+});
+
+btnAuthAction.addEventListener('click', async () => {
+  const username = authUsernameInput.value.trim();
+  const password = authPasswordInput.value;
+
+  if (!username || !password) {
+    alert("Please enter both username and password.");
+    return;
+  }
+
+  if (username.length < 3) {
+    alert("Username must be at least 3 characters.");
+    return;
+  }
+
+  if (!SERVER_URL) {
+    alert("No server connection URL detected. Make sure your server is online.");
+    return;
+  }
+
+  const endpoint = authMode === 'login' ? '/api/login' : '/api/register';
+  try {
+    const res = await fetch(`${SERVER_URL}${endpoint}`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ username, password })
+    });
+
+    const data = await res.json();
+    if (res.ok) {
+      if (authMode === 'register') {
+        // Auto-login after registration
+        authMode = 'login';
+        btnAuthAction.click();
+      } else {
+        // Login success
+        loggedInUser = data.user.username;
+        localStorage.setItem('clash_chess_user', loggedInUser);
+        authUsernameInput.value = "";
+        authPasswordInput.value = "";
+        
+        initAuth();
+        
+        // Register socket user association
+        if (socket.connected) {
+          socket.emit('register_socket_user', { username: loggedInUser });
+        }
+      }
+    } else {
+      alert(data.reason || "Authentication request failed.");
+    }
+  } catch (err) {
+    console.error("Auth HTTP request failed:", err);
+    alert("Unable to communicate with authentication server.");
+  }
+});
+
+btnLogout.addEventListener('click', () => {
+  localStorage.removeItem('clash_chess_user');
+  loggedInUser = null;
+  initAuth();
+  
+  if (socket.connected) {
+    socket.emit('register_socket_user', { username: null });
+  }
+});
+
+// Run Auth Initialization immediately on script load
+initAuth();
+
 // --- 1. LOBBY MATCHMAKING INTERACTION HANDLERS ---
 
 // Connect and trigger action helper
@@ -98,6 +240,9 @@ function connectSocket(callback) {
     
     socket.once('connect', () => {
       lobbyStatus.innerText = "Server Connected.";
+      if (loggedInUser) {
+        socket.emit('register_socket_user', { username: loggedInUser });
+      }
       callback();
     });
 
@@ -105,6 +250,9 @@ function connectSocket(callback) {
       lobbyStatus.innerText = "Connection failed. Backend server may be starting up, please try again in a few seconds!";
     });
   } else {
+    if (loggedInUser) {
+      socket.emit('register_socket_user', { username: loggedInUser });
+    }
     callback();
   }
 }
@@ -193,6 +341,7 @@ function resetToLobby() {
   dragSource = null;
   availableMoves = [];
   placementSquares = [];
+  playerNames = null;
   
   gameBoardContainer.classList.add('hidden');
   lobbyWaiting.classList.add('hidden');
@@ -225,21 +374,29 @@ socket.on('room_joined', ({ roomId, yourColor }) => {
   updateUI();
 });
 
-socket.on('game_state_update', ({ fen, turn, whiteElixir, blackElixir, gameStatus, winner }) => {
+socket.on('game_state_update', ({ fen, turn, whiteElixir, blackElixir, gameStatus, winner, playerNames: names }) => {
   if (isOfflineMode) return;
   console.log(`State update: turn=${turn}, elixirs=W:${whiteElixir} B:${blackElixir}`);
   
   chess.load(fen);
   activeTurn = turn;
   playerElixirs = { w: whiteElixir, b: blackElixir };
+  playerNames = names;
 
   updateUI();
 
   if (gameStatus === 'checkmate') {
     const winnerName = winner === 'w' ? 'White' : 'Black';
     showGameOver('CHECKMATE!', `${winnerName} Player Wins!`);
+    // Refresh player profile stats if logged in
+    if (loggedInUser) {
+      setTimeout(() => fetchStats(loggedInUser), 1500);
+    }
   } else if (gameStatus === 'stalemate') {
     showGameOver('STALEMATE!', 'Draw Game');
+    if (loggedInUser) {
+      setTimeout(() => fetchStats(loggedInUser), 1500);
+    }
   }
 });
 
@@ -415,8 +572,10 @@ function updateUI() {
       whiteTitle.innerText = `WHITE PLAYER`;
       blackTitle.innerText = `BLACK PLAYER`;
     } else {
-      whiteTitle.innerText = `WHITE PLAYER ${myColor === 'w' ? '(YOU)' : ''}`;
-      blackTitle.innerText = `BLACK PLAYER ${myColor === 'b' ? '(YOU)' : ''}`;
+      const wName = playerNames ? playerNames.w : 'Anonymous';
+      const bName = playerNames ? playerNames.b : 'Anonymous';
+      whiteTitle.innerText = `${wName.toUpperCase()} ${myColor === 'w' ? '(YOU)' : ''}`;
+      blackTitle.innerText = `${bName.toUpperCase()} ${myColor === 'b' ? '(YOU)' : ''}`;
     }
   }
 

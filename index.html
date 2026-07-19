@@ -23,6 +23,57 @@
 
     <!-- Lobby Setup Screen -->
     <section id="lobby-setup" class="lobby-setup-container">
+      <!-- Auth Card (Sign Up / Log In) -->
+      <div id="auth-card" class="lobby-card">
+        <div id="auth-form-view">
+          <h2 id="auth-title">PLAYER LOGIN</h2>
+          <p class="lobby-info">Create an account to track your match history and competitive stats.</p>
+          
+          <div class="auth-inputs" style="display: flex; flex-direction: column; gap: 12px; margin-top: 15px;">
+            <input type="text" id="auth-username" class="auth-text-input" placeholder="USERNAME" maxlength="15">
+            <input type="password" id="auth-password" class="auth-text-input" placeholder="PASSWORD">
+          </div>
+
+          <div class="auth-buttons" style="display: flex; flex-direction: column; gap: 10px; margin-top: 20px;">
+            <button id="btn-auth-action" class="btn-primary">Log In</button>
+            <p class="auth-toggle-text" style="font-size: 0.85rem; color: var(--color-text-secondary); margin-top: 8px;">
+              Don't have an account? <span id="btn-toggle-auth" style="color: var(--color-gold); cursor: pointer; text-decoration: underline;">Sign Up</span>
+            </p>
+          </div>
+        </div>
+
+        <div id="auth-profile-view" class="hidden">
+          <h2>PLAYER PROFILE</h2>
+          <div class="profile-header" style="margin-top: 10px;">
+            <span id="profile-username" style="font-family: var(--font-display); font-size: 1.4rem; color: var(--color-gold); font-weight: 800;">PLAYER</span>
+          </div>
+
+          <!-- Stats Grid -->
+          <div class="stats-grid" style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; margin-top: 20px;">
+            <div class="stat-box" style="background: rgba(0, 0, 0, 0.2); border: 1px solid var(--color-panel-border); border-radius: 8px; padding: 10px; text-align: center;">
+              <div style="font-size: 0.75rem; color: var(--color-text-secondary); text-transform: uppercase;">Played</div>
+              <div id="stat-played" style="font-family: var(--font-display); font-size: 1.2rem; font-weight: bold; margin-top: 2px;">0</div>
+            </div>
+            <div class="stat-box" style="background: rgba(0, 0, 0, 0.2); border: 1px solid var(--color-panel-border); border-radius: 8px; padding: 10px; text-align: center;">
+              <div style="font-size: 0.75rem; color: var(--color-text-secondary); text-transform: uppercase;">Win Rate</div>
+              <div id="stat-winrate" style="font-family: var(--font-display); font-size: 1.2rem; font-weight: bold; color: var(--color-blue-glow); margin-top: 2px;">0%</div>
+            </div>
+            <div class="stat-box" style="background: rgba(76, 217, 100, 0.1); border: 1px solid rgba(76, 217, 100, 0.2); border-radius: 8px; padding: 10px; text-align: center;">
+              <div style="font-size: 0.75rem; color: #4cd964; text-transform: uppercase;">Wins</div>
+              <div id="stat-wins" style="font-family: var(--font-display); font-size: 1.2rem; font-weight: bold; color: #4cd964; margin-top: 2px;">0</div>
+            </div>
+            <div class="stat-box" style="background: rgba(255, 51, 75, 0.1); border: 1px solid rgba(255, 51, 75, 0.2); border-radius: 8px; padding: 10px; text-align: center;">
+              <div style="font-size: 0.75rem; color: #ff334b; text-transform: uppercase;">Losses</div>
+              <div id="stat-losses" style="font-family: var(--font-display); font-size: 1.2rem; font-weight: bold; color: #ff334b; margin-top: 2px;">0</div>
+            </div>
+          </div>
+
+          <div style="margin-top: 25px;">
+            <button id="btn-logout" class="btn-secondary">Log Out</button>
+          </div>
+        </div>
+      </div>
+
       <div class="lobby-card">
         <h2>GAME LOBBY</h2>
         <p class="lobby-info">Play Clash Chess online with a friend by sharing a custom room code.</p>

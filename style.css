@@ -78,11 +78,31 @@ body {
 /* Lobby Screens */
 .lobby-setup-container {
   display: flex;
+  flex-direction: row;
+  flex-wrap: wrap;
   justify-content: center;
-  align-items: center;
+  align-items: flex-start;
+  gap: 30px;
   flex: 1;
   width: 100%;
   padding: 20px 0;
+}
+
+.auth-text-input {
+  padding: 12px;
+  border-radius: 8px;
+  border: 1px solid var(--color-panel-border);
+  background: #11151f;
+  color: #fff;
+  font-family: var(--font-sans);
+  font-size: 0.95rem;
+  text-align: center;
+  outline: none;
+  transition: border-color 0.2s ease;
+}
+
+.auth-text-input:focus {
+  border-color: var(--color-blue-glow);
 }
 
 .lobby-card {

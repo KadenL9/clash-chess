@@ -3,13 +3,66 @@ import { createServer } from 'http';
 import { Server } from 'socket.io';
 import cors from 'cors';
 import { Chess } from 'chess.js';
+import * as db from './db.js';
 
 const app = express();
 app.use(cors());
+app.use(express.json());
 
 // Health Check for Render.com
 app.get('/health', (req, res) => {
   res.status(200).send('OK');
+});
+
+// Authentication & Stats HTTP APIs
+app.post('/api/register', async (req, res) => {
+  const { username, password } = req.body;
+  if (!username || !password) {
+    return res.status(400).json({ success: false, reason: 'Username and password are required.' });
+  }
+  const trimmed = username.trim();
+  if (trimmed.length < 3 || trimmed.length > 15) {
+    return res.status(400).json({ success: false, reason: 'Username must be between 3 and 15 characters.' });
+  }
+  try {
+    const result = await db.registerUser(trimmed, password);
+    if (result.success) {
+      return res.json({ success: true });
+    } else {
+      return res.status(400).json(result);
+    }
+  } catch (err) {
+    return res.status(500).json({ success: false, reason: 'Internal error during registration.' });
+  }
+});
+
+app.post('/api/login', async (req, res) => {
+  const { username, password } = req.body;
+  if (!username || !password) {
+    return res.status(400).json({ success: false, reason: 'Username and password are required.' });
+  }
+  try {
+    const result = await db.loginUser(username, password);
+    if (result.success) {
+      return res.json(result);
+    } else {
+      return res.status(400).json(result);
+    }
+  } catch (err) {
+    return res.status(500).json({ success: false, reason: 'Internal error during login.' });
+  }
+});
+
+app.get('/api/stats/:username', async (req, res) => {
+  try {
+    const statsData = await db.fetchUserStats(req.params.username);
+    if (!statsData) {
+      return res.status(404).json({ error: 'User not found' });
+    }
+    return res.json(statsData);
+  } catch (err) {
+    return res.status(500).json({ error: 'Internal error fetching stats.' });
+  }
 });
 
 const httpServer = createServer(app);
@@ -122,6 +175,12 @@ function generateRoomCode() {
 io.on('connection', (socket) => {
   console.log(`Socket connected: ${socket.id}`);
 
+  // Associate socket connection with authenticated user
+  socket.on('register_socket_user', ({ username }) => {
+    socket.username = username;
+    console.log(`Socket ${socket.id} associated with username: ${username}`);
+  });
+
   // 1. Create Lobby Room
   socket.on('create_room', () => {
     let roomId = generateRoomCode();
@@ -143,6 +202,7 @@ io.on('connection', (socket) => {
       roomId,
       chess: chessInstance,
       players: { w: socket.id, b: null },
+      playerNames: { w: socket.username || 'Anonymous', b: null },
       playerElixirs: { w: 2, b: 0 } // White starts with 2 elixir
     };
 
@@ -150,7 +210,7 @@ io.on('connection', (socket) => {
     socket.roomId = roomId;
     socket.playerColor = 'w';
 
-    console.log(`Room created: ${roomId} by ${socket.id}`);
+    console.log(`Room created: ${roomId} by ${socket.id} (username: ${socket.username || 'Anonymous'})`);
     socket.emit('room_created', { roomId, yourColor: 'w' });
   });
 
@@ -181,6 +241,13 @@ io.on('connection', (socket) => {
       b: creatorColor === 'b' ? creatorId : joinerId
     };
 
+    const creatorName = room.playerNames.w;
+    const joinerName = socket.username || 'Anonymous';
+    room.playerNames = {
+      w: creatorColor === 'w' ? creatorName : joinerName,
+      b: creatorColor === 'b' ? creatorName : joinerName
+    };
+
     socket.join(code);
     socket.roomId = code;
 
@@ -189,7 +256,7 @@ io.on('connection', (socket) => {
     if (creatorSocket) creatorSocket.playerColor = creatorColor;
     socket.playerColor = joinerColor;
 
-    console.log(`Room ${code} starting: Creator=${creatorColor}, Joiner=${joinerColor}`);
+    console.log(`Room ${code} starting: Creator=${creatorColor} (${creatorName}), Joiner=${joinerColor} (${joinerName})`);
     
     // Notify both players individually of their assigned color
     io.to(creatorId).emit('room_joined', {
@@ -347,13 +414,33 @@ function sendState(roomId) {
     gameStatus = 'stalemate';
   }
 
+  // Record stats once when game resolves
+  if (gameStatus !== 'active' && !room.statsRecorded) {
+    room.statsRecorded = true;
+    const whiteUser = room.playerNames ? room.playerNames.w : 'Anonymous';
+    const blackUser = room.playerNames ? room.playerNames.b : 'Anonymous';
+
+    if (gameStatus === 'checkmate') {
+      if (whiteUser && whiteUser !== 'Anonymous') {
+        db.recordGameResult(whiteUser, winner === 'w' ? 'win' : 'loss');
+      }
+      if (blackUser && blackUser !== 'Anonymous') {
+        db.recordGameResult(blackUser, winner === 'b' ? 'win' : 'loss');
+      }
+    } else if (gameStatus === 'stalemate') {
+      if (whiteUser && whiteUser !== 'Anonymous') db.recordGameResult(whiteUser, 'draw');
+      if (blackUser && blackUser !== 'Anonymous') db.recordGameResult(blackUser, 'draw');
+    }
+  }
+
   io.to(roomId).emit('game_state_update', {
     fen: chessInstance.fen(),
     turn,
     whiteElixir: room.playerElixirs.w,
     blackElixir: room.playerElixirs.b,
     gameStatus,
-    winner
+    winner,
+    playerNames: room.playerNames || { w: 'Anonymous', b: 'Anonymous' }
   });
 }
 
