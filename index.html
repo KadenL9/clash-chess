@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Clash Chess - Online Multiplayer Variant</title>
+  <meta name="description" content="A unique chess variant combining standard chess strategy with Clash Royale's elixir spawning and card placement mechanics.">
+  
+  <!-- Premium Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;800&family=Inter:wght@400;600&display=swap" rel="stylesheet">
+  
+  <link rel="stylesheet" href="./style.css">
+</head>
+<body>
+  <div id="app">
+    <!-- Header -->
+    <header class="app-header">
+      <h1 class="logo">CLASH CHESS</h1>
+      <p class="tagline">Chess strategy meets Clash Royale elixir mechanics</p>
+    </header>
+
+    <!-- Lobby Setup Screen -->
+    <section id="lobby-setup" class="lobby-setup-container">
+      <div class="lobby-card">
+        <h2>GAME LOBBY</h2>
+        <p class="lobby-info">Play Clash Chess online with a friend by sharing a custom room code.</p>
+        
+        <div class="lobby-actions">
+          <button id="btn-create-room" class="btn-primary btn-lobby">Create Private Game</button>
+          
+          <div class="lobby-divider"><span>OR</span></div>
+          
+          <div class="join-room-input-group">
+            <input type="text" id="input-room-code" placeholder="ENTER 5-LETTER CODE" maxlength="5">
+            <button id="btn-join-room" class="btn-secondary btn-lobby">Join Game</button>
+          </div>
+        </div>
+        
+        <div id="lobby-status" class="lobby-status-text">
+          Connecting to server...
+        </div>
+      </div>
+    </section>
+
+    <!-- Waiting Lobby Screen -->
+    <section id="lobby-waiting" class="lobby-setup-container hidden">
+      <div class="lobby-card">
+        <h2>ROOM CREATED</h2>
+        <p class="lobby-info">Share this code with your friend to start the match:</p>
+        
+        <div class="room-code-display" id="room-code-display">-----</div>
+        
+        <div class="waiting-indicator">
+          <div class="spinner"></div>
+          <span>Waiting for opponent to connect...</span>
+        </div>
+        
+        <button id="btn-cancel-room" class="btn-secondary btn-lobby">Cancel & Leave</button>
+      </div>
+    </section>
+
+    <!-- Main Game Container (hidden on load) -->
+    <main class="game-container hidden" id="game-board-container">
+      
+      <!-- Left HUD Sidebar -->
+      <section class="hud-sidebar">
+        <!-- Black Player Card -->
+        <div class="player-card" id="player-black-card">
+          <div class="player-header">
+            <span class="player-title">BLACK PLAYER</span>
+            <span class="turn-dot" id="black-turn-dot"></span>
+          </div>
+          <div class="elixir-container">
+            <div class="elixir-bar" id="black-elixir-bar">
+              <div class="elixir-bar-fill" id="black-elixir-fill"></div>
+              <div class="elixir-bar-gloss"></div>
+            </div>
+            <div class="elixir-text" id="black-elixir-text">0 Elixir</div>
+          </div>
+        </div>
+
+        <!-- Current Turn Announcement -->
+        <div class="turn-announcement" id="turn-announcement">
+          White's Turn
+        </div>
+
+        <!-- White Player Card -->
+        <div class="player-card" id="player-white-card">
+          <div class="player-header">
+            <span class="player-title">WHITE PLAYER</span>
+            <span class="turn-dot" id="white-turn-dot"></span>
+          </div>
+          <div class="elixir-container">
+            <div class="elixir-bar" id="white-elixir-bar">
+              <div class="elixir-bar-fill" id="white-elixir-fill"></div>
+              <div class="elixir-bar-gloss"></div>
+            </div>
+            <div class="elixir-text" id="white-elixir-text">0 Elixir</div>
+          </div>
+        </div>
+
+        <!-- Helper Instructions -->
+        <div class="instructions-card">
+          <h3>HOW TO PLAY</h3>
+          <ul>
+            <li>Start with only Kings on E1 and E8.</li>
+            <li>Gain <strong>+2 Elixir</strong> every turn.</li>
+            <li>Drag a piece to move it, <strong>OR</strong> drag a piece from the shop to spawn it on its <strong>classic starting squares</strong> (e.g., Pawns on rank 2/7, Rooks on corners, etc.).</li>
+          </ul>
+          <button id="btn-restart" class="btn-primary">Leave Lobby</button>
+        </div>
+      </section>
+
+      <!-- Center Chess Board -->
+      <section class="board-area">
+        <div class="board-frame">
+          <div id="chess-board" class="chess-board"></div>
+        </div>
+      </section>
+
+      <!-- Right Shop Sidebar -->
+      <section class="shop-sidebar">
+        <div class="shop-card">
+          <h2 class="shop-title">PIECES SHOP</h2>
+          <div class="shop-grid" id="shop-grid">
+            <!-- Pawn Card -->
+            <div class="shop-item-card" data-piece="pawn" draggable="true">
+              <div class="shop-item-icon">♙</div>
+              <div class="shop-item-details">
+                <span class="shop-item-name">Pawn</span>
+                <span class="shop-item-cost">1 Elixir</span>
+              </div>
+            </div>
+            <!-- Knight Card -->
+            <div class="shop-item-card" data-piece="knight" draggable="true">
+              <div class="shop-item-icon">♘</div>
+              <div class="shop-item-details">
+                <span class="shop-item-name">Knight</span>
+                <span class="shop-item-cost">3 Elixir</span>
+              </div>
+            </div>
+            <!-- Bishop Card -->
+            <div class="shop-item-card" data-piece="bishop" draggable="true">
+              <div class="shop-item-icon">♗</div>
+              <div class="shop-item-details">
+                <span class="shop-item-name">Bishop</span>
+                <span class="shop-item-cost">3 Elixir</span>
+              </div>
+            </div>
+            <!-- Rook Card -->
+            <div class="shop-item-card" data-piece="rook" draggable="true">
+              <div class="shop-item-icon">♖</div>
+              <div class="shop-item-details">
+                <span class="shop-item-name">Rook</span>
+                <span class="shop-item-cost">5 Elixir</span>
+              </div>
+            </div>
+            <!-- Queen Card -->
+            <div class="shop-item-card" data-piece="queen" draggable="true">
+              <div class="shop-item-icon">♕</div>
+              <div class="shop-item-details">
+                <span class="shop-item-name">Queen</span>
+                <span class="shop-item-cost">9 Elixir</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+    </main>
+
+    <!-- Overlay Alerts -->
+    <div id="game-over-overlay" class="overlay hidden">
+      <div class="overlay-card">
+        <h2 id="overlay-title">CHECKMATE!</h2>
+        <p id="overlay-subtitle">White Player Wins</p>
+        <button id="btn-overlay-restart" class="btn-primary">Leave Room</button>
+      </div>
+    </div>
+  </div>
+
+  <script type="module" src="./main.js"></script>
+</body>
+</html>
