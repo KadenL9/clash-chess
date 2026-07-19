@@ -149,25 +149,23 @@ function resetToLobby() {
 
 // --- 2. WEBSOCKET STATE SYNCHRONIZATION ---
 
-socket.on('room_created', ({ roomId, yourColor }) => {
-  console.log(`Room created: ${roomId}, assigned: ${yourColor}`);
-  myColor = yourColor;
+socket.on('room_created', ({ roomId }) => {
+  console.log(`Room created: ${roomId}`);
   lobbySetup.classList.add('hidden');
   lobbyWaiting.classList.remove('hidden');
   roomCodeDisplay.innerText = roomId;
 });
 
-socket.on('room_joined', ({ roomId, whitePlayerId, blackPlayerId }) => {
-  console.log(`Match started inside Room ${roomId}`);
-  
-  // Assign Color to joiner (if they don't already have it)
-  if (!myColor) {
-    myColor = 'b';
-  }
+socket.on('room_joined', ({ roomId, yourColor }) => {
+  console.log(`Match started inside Room ${roomId}, color assigned: ${yourColor}`);
+  myColor = yourColor;
 
   lobbySetup.classList.add('hidden');
   lobbyWaiting.classList.add('hidden');
   gameBoardContainer.classList.remove('hidden');
+
+  // Draw board view matching player direction immediately
+  updateUI();
 });
 
 socket.on('game_state_update', ({ fen, turn, whiteElixir, blackElixir, gameStatus, winner }) => {
@@ -227,6 +225,14 @@ function isClassicStartingSquare(ptype, color, x, y) {
 function updateUI() {
   const turn = activeTurn;
   
+  // Highlight who we are on the player cards
+  const whiteTitle = document.querySelector('#player-white-card .player-title');
+  const blackTitle = document.querySelector('#player-black-card .player-title');
+  if (whiteTitle && blackTitle) {
+    whiteTitle.innerText = `WHITE PLAYER ${myColor === 'w' ? '(YOU)' : ''}`;
+    blackTitle.innerText = `BLACK PLAYER ${myColor === 'b' ? '(YOU)' : ''}`;
+  }
+
   // Update Turn title announcement
   let announcement = `${turn === 'w' ? 'White' : 'Black'}'s Turn`;
   if (myColor) {
@@ -319,10 +325,15 @@ function calculateIndicators() {
 }
 
 function renderBoard() {
+  console.log(`renderBoard: Rendering board. myColor=${myColor}`);
   boardEl.innerHTML = '';
 
-  for (let y = 7; y >= 0; y--) {
-    for (let x = 0; x < 8; x++) {
+  // Determine drawing order for flipped board if playing as Black ('b')
+  const yValues = myColor === 'b' ? [0, 1, 2, 3, 4, 5, 6, 7] : [7, 6, 5, 4, 3, 2, 1, 0];
+  const xValues = myColor === 'b' ? [7, 6, 5, 4, 3, 2, 1, 0] : [0, 1, 2, 3, 4, 5, 6, 7];
+
+  for (const y of yValues) {
+    for (const x of xValues) {
       const square = getSquareName(x, y);
       const piece = chess.get(square);
       

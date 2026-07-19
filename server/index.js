@@ -169,18 +169,37 @@ io.on('connection', (socket) => {
       return;
     }
 
-    room.players.b = socket.id;
+    const creatorId = room.players.w;
+    const joinerId = socket.id;
+
+    // Randomize player color assignments (White/Black)
+    const creatorColor = Math.random() < 0.5 ? 'w' : 'b';
+    const joinerColor = creatorColor === 'w' ? 'b' : 'w';
+
+    room.players = {
+      w: creatorColor === 'w' ? creatorId : joinerId,
+      b: creatorColor === 'b' ? creatorId : joinerId
+    };
+
     socket.join(code);
     socket.roomId = code;
-    socket.playerColor = 'b';
 
-    console.log(`Player ${socket.id} joined Room ${code} as Black`);
+    // Update socket metadata colors
+    const creatorSocket = io.sockets.sockets.get(creatorId);
+    if (creatorSocket) creatorSocket.playerColor = creatorColor;
+    socket.playerColor = joinerColor;
+
+    console.log(`Room ${code} starting: Creator=${creatorColor}, Joiner=${joinerColor}`);
     
-    // Broadcast start game to both players
-    io.to(code).emit('room_joined', {
+    // Notify both players individually of their assigned color
+    io.to(creatorId).emit('room_joined', {
       roomId: code,
-      whitePlayerId: room.players.w,
-      blackPlayerId: room.players.b
+      yourColor: creatorColor
+    });
+
+    io.to(joinerId).emit('room_joined', {
+      roomId: code,
+      yourColor: joinerColor
     });
 
     // Send initial board state payload
