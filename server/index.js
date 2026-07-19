@@ -210,10 +210,15 @@ io.on('connection', (socket) => {
   socket.on('make_move', ({ from, to }) => {
     const code = socket.roomId;
     const room = rooms[code];
-    if (!room) return;
+    if (!room) {
+      console.log(`make_move error: room ${code} not found`);
+      return;
+    }
 
     const chessInstance = room.chess;
     const turn = chessInstance.turn();
+
+    console.log(`make_move: room=${code}, turn=${turn}, expectedSocket=${room.players[turn]}, actualSocket=${socket.id}`);
 
     // Verify turn order
     if (room.players[turn] !== socket.id) {
@@ -238,10 +243,15 @@ io.on('connection', (socket) => {
   socket.on('spawn_piece', ({ piece, to }) => {
     const code = socket.roomId;
     const room = rooms[code];
-    if (!room) return;
+    if (!room) {
+      console.log(`spawn_piece error: room ${code} not found`);
+      return;
+    }
 
     const chessInstance = room.chess;
     const turn = chessInstance.turn();
+
+    console.log(`spawn_piece: room=${code}, turn=${turn}, expectedSocket=${room.players[turn]}, actualSocket=${socket.id}`);
 
     if (room.players[turn] !== socket.id) {
       socket.emit('invalid_action', { reason: "It's not your turn!" });
