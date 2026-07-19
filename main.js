@@ -27,7 +27,6 @@ const parseSquareName = (square) => {
 
 // Determine server URL dynamically (Render URL or localhost)
 const DEV_SERVER_URL = "http://localhost:3000";
-// Read the production server URL from Vite environment variables (e.g. VITE_BACKEND_URL)
 const PROD_SERVER_URL = import.meta.env.VITE_BACKEND_URL || "";
 const SERVER_URL = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1' 
   ? DEV_SERVER_URL 
@@ -39,7 +38,8 @@ const socket = io(SERVER_URL, { autoConnect: false });
 // Game State variables
 let chess = new Chess();
 let playerElixirs = { w: 2, b: 0 };
-let myColor = null;                 // 'w' or 'b' (assigned on join)
+let isOfflineMode = false;          // Local pass-and-play fallback
+let myColor = null;                 // 'w' or 'b' (online mode only)
 let activeTurn = 'w';               // 'w' or 'b'
 let selectedTile = null;            // {x, y}
 let selectedShopPiece = null;       // 'pawn', 'knight', etc.
@@ -55,6 +55,7 @@ const lobbyStatus = document.getElementById('lobby-status');
 const roomCodeDisplay = document.getElementById('room-code-display');
 const btnCreateRoom = document.getElementById('btn-create-room');
 const btnJoinRoom = document.getElementById('btn-join-room');
+const btnPlayOffline = document.getElementById('btn-play-offline');
 const btnCancelRoom = document.getElementById('btn-cancel-room');
 const inputRoomCode = document.getElementById('input-room-code');
 
@@ -113,6 +114,38 @@ btnJoinRoom.addEventListener('click', () => {
   });
 });
 
+// Start Offline Pass-and-Play
+btnPlayOffline.addEventListener('click', () => {
+  console.log("Starting offline pass-and-play mode...");
+  isOfflineMode = true;
+  myColor = null; // null color enables dragging both White and Black pieces
+  
+  // Reset Chess state
+  chess = new Chess();
+  chess.clear();
+  chess.put({ type: 'k', color: 'w' }, 'e1');
+  chess.put({ type: 'k', color: 'b' }, 'e8');
+  
+  const fenParts = chess.fen().split(' ');
+  fenParts[1] = 'w';
+  chess.load(fenParts.join(' '));
+  
+  playerElixirs = { w: 2, b: 0 };
+  activeTurn = 'w';
+  selectedTile = null;
+  selectedShopPiece = null;
+  dragSource = null;
+  availableMoves = [];
+  placementSquares = [];
+  
+  // Toggle layout containers
+  lobbySetup.classList.add('hidden');
+  lobbyWaiting.classList.add('hidden');
+  gameBoardContainer.classList.remove('hidden');
+  
+  updateUI();
+});
+
 // Cancel Waiting / Leave Lobby
 btnCancelRoom.addEventListener('click', () => {
   socket.disconnect();
@@ -121,15 +154,21 @@ btnCancelRoom.addEventListener('click', () => {
 
 // Leave active game board
 btnRestart.addEventListener('click', () => {
-  if (confirm("Are you sure you want to leave the game room?")) {
-    socket.disconnect();
+  if (confirm("Are you sure you want to leave the game?")) {
+    if (!isOfflineMode) {
+      socket.disconnect();
+    }
+    isOfflineMode = false;
     resetToLobby();
   }
 });
 
 btnOverlayRestart.addEventListener('click', () => {
   hideGameOver();
-  socket.disconnect();
+  if (!isOfflineMode) {
+    socket.disconnect();
+  }
+  isOfflineMode = false;
   resetToLobby();
 });
 
@@ -170,16 +209,15 @@ socket.on('room_joined', ({ roomId, yourColor }) => {
 });
 
 socket.on('game_state_update', ({ fen, turn, whiteElixir, blackElixir, gameStatus, winner }) => {
+  if (isOfflineMode) return;
   console.log(`State update: turn=${turn}, elixirs=W:${whiteElixir} B:${blackElixir}`);
   
-  // Load canonical chess board state
   chess.load(fen);
   activeTurn = turn;
   playerElixirs = { w: whiteElixir, b: blackElixir };
 
   updateUI();
 
-  // Handle Game Overs
   if (gameStatus === 'checkmate') {
     const winnerName = winner === 'w' ? 'White' : 'Black';
     showGameOver('CHECKMATE!', `${winnerName} Player Wins!`);
@@ -190,7 +228,6 @@ socket.on('game_state_update', ({ fen, turn, whiteElixir, blackElixir, gameStatu
 
 socket.on('invalid_action', ({ reason }) => {
   alert(reason);
-  // Re-sync UI state
   updateUI();
 });
 
@@ -200,7 +237,7 @@ socket.on('opponent_disconnected', ({ reason }) => {
   resetToLobby();
 });
 
-// --- 3. CLASSIC STARTING SQUARE VALIDATION (CLIENT-SIDE VISUALS) ---
+// --- 3. CLASSIC STARTING SQUARE VALIDATION ---
 
 function isClassicStartingSquare(ptype, color, x, y) {
   if (color === 'w') {
@@ -221,7 +258,134 @@ function isClassicStartingSquare(ptype, color, x, y) {
   return false;
 }
 
-// --- 4. GAME UI DRAWING AND BOARD RENDERING ---
+// --- 4. OFFLINE LOCAL PASS-AND-PLAY MOTORS ---
+
+function makeMoveLocal(from, to) {
+  try {
+    const move = chess.move({ from, to, promotion: 'q' });
+    if (move) {
+      switchTurnLocal();
+      return true;
+    }
+  } catch (err) {
+    console.warn("Invalid chess move attempted:", err.message);
+  }
+  return false;
+}
+
+function placePieceLocal(ptype, to) {
+  try {
+    const cost = ELIXIR_COSTS[ptype];
+    const turn = chess.turn();
+    if (playerElixirs[turn] < cost) return false;
+
+    const { x, y } = parseSquareName(to);
+    if (!isClassicStartingSquare(ptype, turn, x, y)) return false;
+    if (chess.get(to)) return false;
+
+    const typeMap = { pawn: 'p', knight: 'n', bishop: 'b', rook: 'r', queen: 'q' };
+    chess.put({ type: typeMap[ptype], color: turn }, to);
+
+    // Spend elixir
+    playerElixirs[turn] -= cost;
+
+    // Toggle Turn manually
+    const fenParts = chess.fen().split(' ');
+    fenParts[1] = turn === 'w' ? 'b' : 'w';
+    fenParts[3] = '-'; // Clear en-passant
+    chess.load(fenParts.join(' '));
+
+    switchTurnLocal();
+    return true;
+  } catch (err) {
+    console.error("Error during piece placement:", err);
+  }
+  return false;
+}
+
+function switchTurnLocal() {
+  const turn = chess.turn();
+  playerElixirs[turn] += 2;
+  activeTurn = turn;
+  updateUI();
+  checkGameStatusLocal();
+}
+
+function checkGameStatusLocal() {
+  const turn = chess.turn();
+  const elixir = playerElixirs[turn];
+
+  const inCheck = chess.inCheck();
+  const hasChessMoves = chess.moves().length > 0;
+  const canPlace = canPlaceAnyPiece(chess, elixir, turn);
+
+  if (inCheck && !hasChessMoves) {
+    const canEscape = canEscapeCheckByPlacement(chess, elixir, turn);
+    if (!canEscape) {
+      showGameOver('CHECKMATE!', `${turn === 'w' ? 'Black' : 'White'} Player Wins!`);
+      return true;
+    }
+  }
+
+  if (!inCheck && !hasChessMoves && !canPlace) {
+    showGameOver('STALEMATE!', 'Draw Game');
+    return true;
+  }
+
+  return false;
+}
+
+function canPlaceAnyPiece(chessInstance, elixir, turn) {
+  const affordable = Object.keys(ELIXIR_COSTS).filter(p => elixir >= ELIXIR_COSTS[p]);
+  if (affordable.length === 0) return false;
+
+  const spawnRows = turn === 'w' ? [0, 1] : [6, 7];
+  for (const ptype of affordable) {
+    for (let x = 0; x < 8; x++) {
+      for (const y of spawnRows) {
+        if (isClassicStartingSquare(ptype, turn, x, y)) {
+          if (!chessInstance.get(getSquareName(x, y))) {
+            return true;
+          }
+        }
+      }
+    }
+  }
+  return false;
+}
+
+function canEscapeCheckByPlacement(chessInstance, elixir, turn) {
+  const affordable = Object.keys(ELIXIR_COSTS).filter(p => elixir >= ELIXIR_COSTS[p]);
+  if (affordable.length === 0) return false;
+
+  const spawnRows = turn === 'w' ? [0, 1] : [6, 7];
+  const typeMap = { pawn: 'p', knight: 'n', bishop: 'b', rook: 'r', queen: 'q' };
+  const originalFen = chessInstance.fen();
+
+  for (const ptype of affordable) {
+    const jsType = typeMap[ptype];
+    for (let x = 0; x < 8; x++) {
+      for (const y of spawnRows) {
+        if (isClassicStartingSquare(ptype, turn, x, y)) {
+          const square = getSquareName(x, y);
+          if (!chessInstance.get(square)) {
+            try {
+              chessInstance.put({ type: jsType, color: turn }, square);
+              const stillInCheck = chessInstance.inCheck();
+              chessInstance.load(originalFen);
+              if (!stillInCheck) return true;
+            } catch (err) {
+              console.error("Temporary check verification error:", err);
+            }
+          }
+        }
+      }
+    }
+  }
+  return false;
+}
+
+// --- 5. GAME UI DRAWING AND BOARD RENDERING ---
 
 function updateUI() {
   const turn = activeTurn;
@@ -230,13 +394,20 @@ function updateUI() {
   const whiteTitle = document.querySelector('#player-white-card .player-title');
   const blackTitle = document.querySelector('#player-black-card .player-title');
   if (whiteTitle && blackTitle) {
-    whiteTitle.innerText = `WHITE PLAYER ${myColor === 'w' ? '(YOU)' : ''}`;
-    blackTitle.innerText = `BLACK PLAYER ${myColor === 'b' ? '(YOU)' : ''}`;
+    if (isOfflineMode) {
+      whiteTitle.innerText = `WHITE PLAYER`;
+      blackTitle.innerText = `BLACK PLAYER`;
+    } else {
+      whiteTitle.innerText = `WHITE PLAYER ${myColor === 'w' ? '(YOU)' : ''}`;
+      blackTitle.innerText = `BLACK PLAYER ${myColor === 'b' ? '(YOU)' : ''}`;
+    }
   }
 
   // Update Turn title announcement
   let announcement = `${turn === 'w' ? 'White' : 'Black'}'s Turn`;
-  if (myColor) {
+  if (isOfflineMode) {
+    announcement += " (Local)";
+  } else if (myColor) {
     announcement += ` (${myColor === turn ? 'Your Turn' : "Opponent's Turn"})`;
   }
   turnAnnouncement.innerText = announcement;
@@ -264,8 +435,12 @@ function updateUI() {
     const jsPieceMap = { pawn: 'p', knight: 'n', bishop: 'b', rook: 'r', queen: 'q' };
     iconEl.innerText = PIECE_SYMBOLS[turn][jsPieceMap[ptype]];
 
-    // Only allow interaction if it's our turn AND we have enough elixir
-    if (myColor === turn && playerElixirs[turn] >= cost) {
+    // Verify shop item usability
+    const canInteract = isOfflineMode
+      ? (playerElixirs[turn] >= cost)
+      : (myColor === turn && playerElixirs[turn] >= cost);
+
+    if (canInteract) {
       card.style.opacity = '1';
       card.style.cursor = 'grab';
       card.setAttribute('draggable', 'true');
@@ -326,7 +501,7 @@ function calculateIndicators() {
 }
 
 function renderBoard() {
-  console.log(`renderBoard: Rendering board. myColor=${myColor}`);
+  console.log(`renderBoard: Rendering board. myColor=${myColor}, offline=${isOfflineMode}`);
   boardEl.innerHTML = '';
 
   // Determine drawing order for flipped board if playing as Black ('b')
@@ -360,7 +535,6 @@ function renderBoard() {
       }
 
       if (piece) {
-        // Skip drawing the piece if it is being dragged so it doesn't double-draw
         const isDraggedBoardPiece = (dragSource && dragSource.source === 'board' && dragSource.x === x && dragSource.y === y);
         if (!isDraggedBoardPiece) {
           const pieceEl = document.createElement('div');
@@ -369,14 +543,22 @@ function renderBoard() {
           pieceEl.setAttribute('draggable', 'true');
           
           // Disable dragging opponent's pieces OR dragging when it's not our turn
-          if (piece.color !== myColor || activeTurn !== myColor) {
+          const canDrag = isOfflineMode
+            ? (piece.color === activeTurn)
+            : (piece.color === myColor && activeTurn === myColor);
+
+          if (!canDrag) {
             pieceEl.style.cursor = 'not-allowed';
             pieceEl.setAttribute('draggable', 'false');
           }
 
           // HTML5 Drag Handlers for pieces
           pieceEl.addEventListener('dragstart', (e) => {
-            if (piece.color !== myColor || activeTurn !== myColor) {
+            const allowed = isOfflineMode
+              ? (piece.color === activeTurn)
+              : (piece.color === myColor && activeTurn === myColor);
+            
+            if (!allowed) {
               e.preventDefault();
               return;
             }
@@ -426,11 +608,19 @@ function renderBoard() {
         if (dragSource.source === 'board') {
           const fromSquare = getSquareName(dragSource.x, dragSource.y);
           if (availableMoves.includes(targetSquare)) {
-            socket.emit('make_move', { from: fromSquare, to: targetSquare });
+            if (isOfflineMode) {
+              makeMoveLocal(fromSquare, targetSquare);
+            } else {
+              socket.emit('make_move', { from: fromSquare, to: targetSquare });
+            }
           }
         } else if (dragSource.source === 'shop') {
           if (placementSquares.includes(targetSquare)) {
-            socket.emit('spawn_piece', { piece: dragSource.piece, to: targetSquare });
+            if (isOfflineMode) {
+              placePieceLocal(dragSource.piece, targetSquare);
+            } else {
+              socket.emit('spawn_piece', { piece: dragSource.piece, to: targetSquare });
+            }
           }
         }
         
@@ -444,23 +634,36 @@ function renderBoard() {
       tile.addEventListener('click', (e) => {
         e.stopPropagation();
 
-        // Check if user is clicking on an active overlay square
+        // Click resolution on indicator overlays
         if (availableMoves.includes(square) && selectedTile) {
-          socket.emit('make_move', { from: getSquareName(selectedTile.x, selectedTile.y), to: square });
+          const fromSquare = getSquareName(selectedTile.x, selectedTile.y);
+          if (isOfflineMode) {
+            makeMoveLocal(fromSquare, square);
+          } else {
+            socket.emit('make_move', { from: fromSquare, to: square });
+          }
           selectedTile = null;
           updateUI();
           return;
         }
 
         if (placementSquares.includes(square) && selectedShopPiece) {
-          socket.emit('spawn_piece', { piece: selectedShopPiece, to: square });
+          if (isOfflineMode) {
+            placePieceLocal(selectedShopPiece, square);
+          } else {
+            socket.emit('spawn_piece', { piece: selectedShopPiece, to: square });
+          }
           selectedShopPiece = null;
           updateUI();
           return;
         }
 
         // Standard select clicks (only allowed if it's our piece AND our turn)
-        if (activeTurn === myColor && piece && piece.color === myColor) {
+        const canSelect = isOfflineMode
+          ? (piece && piece.color === activeTurn)
+          : (activeTurn === myColor && piece && piece.color === myColor);
+
+        if (canSelect) {
           selectedTile = { x, y };
           selectedShopPiece = null;
         } else {
@@ -482,7 +685,11 @@ shopCards.forEach(card => {
     const cost = ELIXIR_COSTS[ptype];
     const turn = activeTurn;
 
-    if (myColor !== turn || playerElixirs[turn] < cost) {
+    const canDrag = isOfflineMode
+      ? (playerElixirs[turn] >= cost)
+      : (myColor === turn && playerElixirs[turn] >= cost);
+
+    if (!canDrag) {
       e.preventDefault();
       return;
     }
@@ -518,7 +725,11 @@ shopCards.forEach(card => {
     const cost = ELIXIR_COSTS[ptype];
     const turn = activeTurn;
 
-    if (myColor === turn && playerElixirs[turn] >= cost) {
+    const canSelect = isOfflineMode
+      ? (playerElixirs[turn] >= cost)
+      : (myColor === turn && playerElixirs[turn] >= cost);
+
+    if (canSelect) {
       if (selectedShopPiece === ptype) {
         selectedShopPiece = null;
       } else {
@@ -550,5 +761,34 @@ function hideGameOver() {
   gameOverOverlay.classList.add('hidden');
 }
 
-// Initial Local Setup
+// Global Key Listeners (Restart on R)
+document.addEventListener('keydown', (e) => {
+  if (e.key.toLowerCase() === 'r') {
+    if (isOfflineMode) {
+      // Re-trigger offline start to reset local variables
+      btnPlayOffline.click();
+    } else {
+      initGame();
+    }
+  }
+});
+
+btnRestart.addEventListener('click', () => {
+  if (isOfflineMode) {
+    btnPlayOffline.click();
+  } else {
+    initGame();
+  }
+});
+
+btnOverlayRestart.addEventListener('click', () => {
+  hideGameOver();
+  if (isOfflineMode) {
+    btnPlayOffline.click();
+  } else {
+    initGame();
+  }
+});
+
+// Launch the Game
 resetToLobby();
