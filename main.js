@@ -27,7 +27,8 @@ const parseSquareName = (square) => {
 
 // Determine server URL dynamically (Render URL or localhost)
 const DEV_SERVER_URL = "http://localhost:3000";
-const PROD_SERVER_URL = "https://clash-chess-backend.onrender.com"; // Deploy backend to Render, then replace this url if different
+// Read the production server URL from Vite environment variables (e.g. VITE_BACKEND_URL)
+const PROD_SERVER_URL = import.meta.env.VITE_BACKEND_URL || "";
 const SERVER_URL = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1' 
   ? DEV_SERVER_URL 
   : PROD_SERVER_URL;
