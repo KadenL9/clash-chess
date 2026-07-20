@@ -52,13 +52,29 @@ body {
 
 /* Header */
 .app-header {
-  text-align: center;
+  position: relative;
+  display: flex;
+  justify-content: center;
+  align-items: center;
   margin-bottom: 25px;
+  width: 100%;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+  padding-bottom: 20px;
+  min-height: 80px;
+}
+
+.header-brand {
+  text-align: center;
+}
+
+.header-auth {
+  position: absolute;
+  right: 0;
 }
 
 .logo {
   font-family: var(--font-display);
-  font-size: 2.8rem;
+  font-size: 2.6rem;
   font-weight: 800;
   letter-spacing: 0.15em;
   background: linear-gradient(135deg, #ffffff 0%, var(--color-gold) 100%);
@@ -73,6 +89,67 @@ body {
   font-size: 0.95rem;
   font-family: var(--font-sans);
   letter-spacing: 0.05em;
+}
+
+/* Header Auth controls */
+.auth-trigger-btn {
+  width: auto !important;
+  padding: 8px 18px !important;
+  font-size: 0.9rem !important;
+  border-color: var(--color-gold) !important;
+  color: var(--color-gold) !important;
+  border-radius: 20px !important;
+}
+
+.auth-trigger-btn:hover {
+  background: rgba(230, 185, 80, 0.1) !important;
+}
+
+.user-profile-pill {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: var(--color-panel-bg);
+  border: 1px solid var(--color-panel-border);
+  padding: 8px 18px;
+  border-radius: 20px;
+  cursor: pointer;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.user-profile-pill:hover {
+  border-color: var(--color-blue-glow);
+  box-shadow: 0 0 10px rgba(56, 139, 253, 0.2);
+}
+
+.profile-pill-avatar {
+  font-size: 1.1rem;
+}
+
+.profile-pill-username {
+  font-family: var(--font-display);
+  font-weight: 600;
+  font-size: 0.9rem;
+  letter-spacing: 0.05em;
+  color: #fff;
+}
+
+/* Modal Close Button */
+.btn-close {
+  position: absolute;
+  top: 15px;
+  right: 15px;
+  background: transparent;
+  border: none;
+  color: var(--color-text-secondary);
+  font-size: 1.8rem;
+  cursor: pointer;
+  transition: color 0.2s ease;
+  line-height: 1;
+}
+
+.btn-close:hover {
+  color: #ff334b;
 }
 
 /* Lobby Screens */
@@ -743,6 +820,18 @@ body {
 
   .tagline {
     font-size: 0.85rem;
+  }
+
+  .app-header {
+    flex-direction: column;
+    align-items: center;
+    gap: 15px;
+    padding-bottom: 15px;
+    min-height: auto;
+  }
+
+  .header-auth {
+    position: static;
   }
 
   .lobby-card {

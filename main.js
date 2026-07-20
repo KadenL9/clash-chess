@@ -90,6 +90,9 @@ const btnOverlayRestart = document.getElementById('btn-overlay-restart');
 const shopCards = document.querySelectorAll('.shop-item-card');
 
 // Auth DOM Elements
+const authModal = document.getElementById('auth-modal');
+const btnCloseAuth = document.getElementById('btn-close-auth');
+const headerAuthContainer = document.getElementById('header-auth');
 const authFormView = document.getElementById('auth-form-view');
 const authProfileView = document.getElementById('auth-profile-view');
 const authTitle = document.getElementById('auth-title');
@@ -133,11 +136,48 @@ function initAuth() {
     authProfileView.classList.remove('hidden');
     profileUsernameDisplay.innerText = loggedInUser.toUpperCase();
     fetchStats(loggedInUser);
+
+    // Update Top Right Header with profile pill
+    headerAuthContainer.innerHTML = `
+      <div class="user-profile-pill" id="btn-show-profile">
+        <span class="profile-pill-avatar">👤</span>
+        <span class="profile-pill-username">${loggedInUser.toUpperCase()}</span>
+      </div>
+    `;
+
+    document.getElementById('btn-show-profile').addEventListener('click', () => {
+      authFormView.classList.add('hidden');
+      authProfileView.classList.remove('hidden');
+      authModal.classList.remove('hidden');
+      fetchStats(loggedInUser);
+    });
   } else {
     authFormView.classList.remove('hidden');
     authProfileView.classList.add('hidden');
+
+    // Update Top Right Header with Login button
+    headerAuthContainer.innerHTML = `
+      <button id="btn-show-auth" class="btn-secondary auth-trigger-btn">Log In / Sign Up</button>
+    `;
+
+    document.getElementById('btn-show-auth').addEventListener('click', () => {
+      authFormView.classList.remove('hidden');
+      authProfileView.classList.add('hidden');
+      authModal.classList.remove('hidden');
+    });
   }
 }
+
+// Modal dismiss events
+btnCloseAuth.addEventListener('click', () => {
+  authModal.classList.add('hidden');
+});
+
+authModal.addEventListener('click', (e) => {
+  if (e.target === authModal) {
+    authModal.classList.add('hidden');
+  }
+});
 
 btnToggleAuth.addEventListener('click', () => {
   if (authMode === 'login') {
@@ -198,6 +238,7 @@ btnAuthAction.addEventListener('click', async () => {
         authPasswordInput.value = "";
         
         initAuth();
+        authModal.classList.add('hidden'); // Close modal
         
         // Register socket user association
         if (socket.connected) {
@@ -217,6 +258,7 @@ btnLogout.addEventListener('click', () => {
   localStorage.removeItem('clash_chess_user');
   loggedInUser = null;
   initAuth();
+  authModal.classList.add('hidden'); // Close modal
   
   if (socket.connected) {
     socket.emit('register_socket_user', { username: null });

@@ -17,14 +17,20 @@
   <div id="app">
     <!-- Header -->
     <header class="app-header">
-      <h1 class="logo">ClashxChess</h1>
-      <p class="tagline">Chess strategy meets Clash Royale elixir mechanics</p>
+      <div class="header-brand">
+        <h1 class="logo">ClashxChess</h1>
+      </div>
+      <div class="header-auth" id="header-auth">
+        <!-- Loaded dynamically via JavaScript -->
+        <button id="btn-show-auth" class="btn-secondary auth-trigger-btn">Log In / Sign Up</button>
+      </div>
     </header>
 
-    <!-- Lobby Setup Screen -->
-    <section id="lobby-setup" class="lobby-setup-container">
-      <!-- Auth Card (Sign Up / Log In) -->
-      <div id="auth-card" class="lobby-card">
+    <!-- Auth Modal Overlay -->
+    <div id="auth-modal" class="overlay hidden">
+      <div id="auth-card" class="overlay-card" style="position: relative;">
+        <button id="btn-close-auth" class="btn-close">&times;</button>
+        
         <div id="auth-form-view">
           <h2 id="auth-title">PLAYER LOGIN</h2>
           <p class="lobby-info">Create an account to track your match history and competitive stats.</p>
@@ -73,7 +79,10 @@
           </div>
         </div>
       </div>
+    </div>
 
+    <!-- Lobby Setup Screen -->
+    <section id="lobby-setup" class="lobby-setup-container">
       <div class="lobby-card">
         <h2>GAME LOBBY</h2>
         <p class="lobby-info">Play Clash Chess online with a friend by sharing a custom room code.</p>
